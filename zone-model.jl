@@ -1,4 +1,7 @@
 using  CairoMakie,DifferentialEquations, ModelingToolkit, Plots, GlobalSensitivity, Statistics, DataFrames, CSV
+include("./nn-regression.jl")
+
+mach
 
 # variables
 
@@ -25,15 +28,15 @@ df = CSV.read("data/eplusout.csv",DataFrame)
 people_load = df[:,6]
 light_load = df[:,7]
 total_load = people_load + light_load
-OAT = df_dataviz[:,2]
-ZNT = df_dataviz[:,8]
+OAT = df[:,2]
+ZNT = df[:,8]
 
 ZNT[25]
 
 @variables t Tz(t)=25 Tw1(t)=20 Tw2(t)=20 Tr(t)=25 Wz(t)=0.5
 
-#@parameters Cz=47.1e3 Fsa=0.192*3600  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
-@parameters Cz=47.1e3 Fsa=0  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
+@parameters Cz=47.1e3 Fsa=0.192*3600  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
+#@parameters Cz=47.1e3 Fsa=0  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
 
 D = Differential(t)
 
@@ -67,12 +70,18 @@ prob = ODEProblem(simpsys,[],tspan,callback=cb,tstops=ev_times)
 sol = solve(prob)
 
 ODEZNT = []
+ODERoofT = []
 for i in 1:length(ZNT)
     push!(ODEZNT,sol(i)[1])
+    push!(ODERoofT,sol(i)[2])
 end
 
 
 
 Plots.plot([ODEZNT[25:1000],ZNT[25:1000]])
+Plots.plot([ODERoofT[25:121],ZNT[25:121]])
+
+Plots.plot(sol)
 
 
+Plots.plot([people_load[25:121],light_load[25:121]])
