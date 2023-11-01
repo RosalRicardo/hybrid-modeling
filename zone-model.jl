@@ -38,7 +38,7 @@ ZNT = df[:,8]
 
 #@parameters Cz=47.1e3 Fsa=0.192*3600  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
 #@parameters Cz=5e3 Fsa=0.192  ρa=1.25 Cpa=1.005 Tsa=5 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0500
-@parameters Cz=5e3 Fsa=0.192  ρa=1.25 Cpa=1.005 Tsa=5 Uw1=2 Uw2=2 Ur=1 Aw1=30 Aw2=30 Ar=12 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0500
+@parameters Cz=2e3 Fsa=0  ρa=1.25 Cpa=1.005 Tsa=5 Uw1=2 Uw2=2 Ur=1 Aw1=30 Aw2=30 Ar=12 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0500
 D = Differential(t)
 
 eqs = [D(Tz) ~ (Fsa*ρa*Cpa*(Tsa-Tz)+2*Uw1*Aw1*(Tw1-Tz)+Ur*Ar*(Tr-Tz)+2*Uw2*Aw2*(Tw2-Tz)+q)/Cz
@@ -86,7 +86,7 @@ end
 
 
 Plots.plot([ODEZNT[1:1000],ZNT[48:1000]])
-Plots.plot([ODERoofT[48:121],ZNT[1:121-48]])
+Plots.plot([ODERoofT[48:121],ZNT[48:121]])
 
 ZNT[48]
 
