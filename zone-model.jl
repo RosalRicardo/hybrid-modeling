@@ -1,7 +1,8 @@
 using  CairoMakie,DifferentialEquations, ModelingToolkit, Plots, GlobalSensitivity, Statistics, DataFrames, CSV
 include("./nn-regression.jl")
 
-mach
+load_nn.mach
+nn_load = load_nn.yhat
 
 # variables
 
@@ -31,13 +32,13 @@ total_load = people_load + light_load
 OAT = df[:,2]
 ZNT = df[:,8]
 
-ZNT[25]
 
-@variables t Tz(t)=25 Tw1(t)=20 Tw2(t)=20 Tr(t)=25 Wz(t)=0.5
 
-@parameters Cz=47.1e3 Fsa=0.192*3600  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
-#@parameters Cz=47.1e3 Fsa=0  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
+@variables t Tz(t)=31.2 Tw1(t)=31 Tw2(t)=31 Tr(t)=31 Wz(t)=0.5
 
+#@parameters Cz=47.1e3 Fsa=0.192*3600  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
+#@parameters Cz=5e3 Fsa=0.192  ρa=1.25 Cpa=1.005 Tsa=5 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0500
+@parameters Cz=5e3 Fsa=0.192  ρa=1.25 Cpa=1.005 Tsa=5 Uw1=2 Uw2=2 Ur=1 Aw1=30 Aw2=30 Ar=12 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0500
 D = Differential(t)
 
 eqs = [D(Tz) ~ (Fsa*ρa*Cpa*(Tsa-Tz)+2*Uw1*Aw1*(Tw1-Tz)+Ur*Ar*(Tr-Tz)+2*Uw2*Aw2*(Tw2-Tz)+q)/Cz
@@ -46,19 +47,25 @@ eqs = [D(Tz) ~ (Fsa*ρa*Cpa*(Tsa-Tz)+2*Uw1*Aw1*(Tw1-Tz)+Ur*Ar*(Tr-Tz)+2*Uw2*Aw2*
         D(Tr) ~ (Ur*Ar*(Tz-Tr)+Ur*Ar*(To-Tr))/Cr
         D(Wz) ~ (Fsa*(Ws-Wz)+(P/ρa))/Vz]
 
+eqs2 = [D(Tz) ~ (Fsa*ρa*Cpa*(Tsa-Tz)+Uw1*Aw1*(To-Tz)+q)/Cz
+        D(Tw1) ~ (Uw1*Aw1*(Tz-Tw1)+Uw1*Aw1*(To-Tw1))/Cw1
+        D(Tw2) ~ (Uw2*Aw2*(Tz-Tw2)+Uw1*Aw1*(To-Tw2))/Cw2
+        D(Tr) ~ (Ur*Ar*(Tz-Tr)+Ur*Ar*(To-Tr))/Cr
+        D(Wz) ~ (Fsa*(Ws-Wz)+(P/ρa))/Vz]        
+
 @named sys = ODESystem(eqs,t)
 
 simpsys = structural_simplify(sys)
 
-tspan = (0.0,1536.0)
+tspan = (0.0,1487.0)
 
-ev_times = collect(0.0:1.0:1536)
+ev_times = collect(0.0:1.0:1487)
 condition(u,t,integrator) = t ∈ ev_times
 #affect!(integrator) = integrator.u[1] += 5*rand(); print(integrator.p[15])
 
 function affect!(integrator)
-    integrator.p[3] = total_load[trunc(Int,integrator.t)]
-    integrator.p[13] = OAT[trunc(Int,integrator.t)]
+    integrator.p[3] = nn_load[trunc(Int,integrator.t)+48]
+    integrator.p[13] = OAT[trunc(Int,integrator.t)+48]
     #push!(energy2,integrator.p[3])
     println(integrator.p)
 end
@@ -78,8 +85,11 @@ end
 
 
 
-Plots.plot([ODEZNT[25:1000],ZNT[25:1000]])
-Plots.plot([ODERoofT[25:121],ZNT[25:121]])
+Plots.plot([ODEZNT[1:1000],ZNT[48:1000]])
+Plots.plot([ODERoofT[48:121],ZNT[1:121-48]])
+
+ZNT[48]
+
 
 Plots.plot(sol)
 
