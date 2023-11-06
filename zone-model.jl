@@ -1,7 +1,9 @@
-using  CairoMakie,DifferentialEquations, ModelingToolkit, Plots, GlobalSensitivity, Statistics, DataFrames, CSV
-include("./nn-regression.jl")
+using  CairoMakie,DifferentialEquations, ModelingToolkit, Plots, GlobalSensitivity, Statistics, DataFrames, CSV, MLJ, Serialization
+import MLJFlux
+#include("./modules/trained_load.jl")
 
-mach
+#mach = deserialize("model/mach_25epoch_1536dp.dat")
+yhat = deserialize("model/yhat_nn_25epochs.dat")[25:end]
 
 # variables
 
@@ -24,19 +26,19 @@ mach
 
 ## READ RAW DATA
 
-df = CSV.read("data/eplusout.csv",DataFrame)
-people_load = df[:,6]
-light_load = df[:,7]
+df = CSV.read("data/eplusout_v29102023.csv",DataFrame)
+
+people_load = df[25:end,9]
+light_load = df[25:end,10]
 total_load = people_load + light_load
-OAT = df[:,2]
-ZNT = df[:,8]
+OAT = df[25:end,2]
+ZNT = df[25:end,12]
 
-ZNT[25]
 
-@variables t Tz(t)=25 Tw1(t)=20 Tw2(t)=20 Tr(t)=25 Wz(t)=0.5
+@variables t Tz(t)=ZNT[1] Tw1(t)=OAT[1] Tw2(t)=OAT[1] Tr(t)=OAT[1] Wz(t)=0.8
 
-@parameters Cz=47.1e3 Fsa=0.192*3600  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
-#@parameters Cz=47.1e3 Fsa=0  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
+#parameters Cz=47.1e3 Fsa=0.192*3600  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
+@parameters Cz=4.5e3 Fsa=0  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=40 Aw2=40 Ar=10 q=3000 To=OAT[1] Cw1=70 Cw2=60 Cr=70 Vz=36 Ws=0.02744 P=0.08
 
 D = Differential(t)
 
@@ -50,14 +52,14 @@ eqs = [D(Tz) ~ (Fsa*ρa*Cpa*(Tsa-Tz)+2*Uw1*Aw1*(Tw1-Tz)+Ur*Ar*(Tr-Tz)+2*Uw2*Aw2*
 
 simpsys = structural_simplify(sys)
 
-tspan = (0.0,1536.0)
+tspan = (1.0,1512.0)
 
-ev_times = collect(0.0:1.0:1536)
+ev_times = collect(1.0:1.0:1512.0)
 condition(u,t,integrator) = t ∈ ev_times
 #affect!(integrator) = integrator.u[1] += 5*rand(); print(integrator.p[15])
 
 function affect!(integrator)
-    integrator.p[3] = total_load[trunc(Int,integrator.t)]
+    integrator.p[3] = yhat[trunc(Int,integrator.t)]
     integrator.p[13] = OAT[trunc(Int,integrator.t)]
     #push!(energy2,integrator.p[3])
     println(integrator.p)
@@ -78,8 +80,11 @@ end
 
 
 
-Plots.plot([ODEZNT[25:1000],ZNT[25:1000]])
-Plots.plot([ODERoofT[25:121],ZNT[25:121]])
+plot1 = Plots.plot([ODEZNT[1:336],ZNT[1:336]])
+plot2 = Plots.plot([total_load[1:336],yhat[1:336]])
+plot3 = Plots.plot([OAT[1:336],people_load[1:336],light_load[1:336]])
+plot_grid = Plots.plot(plot1,plot2,layout=(3,1))
+Plots.plot([ODERoofT[1:336],OAT[1:336]])
 
 Plots.plot(sol)
 

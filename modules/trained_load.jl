@@ -1,19 +1,6 @@
-module decisiontree_load
-    using MLJ, DataFrames, Plots, CSV,MLJDecisionTreeInterface
-    df = CSV.read("data/eplusout_v29102023.csv",DataFrame)
-    people_load = df[:,9]
-    light_load = df[:,10]
-    total_load = people_load + light_load
-    df[!,:total_load] = total_load
-
-    df_filtered = DataFrame(hcat(df[:,2],df[:,4],df[:,6],df[:,7],df[:,8],df[:,10],df[:,24]),:auto)
-
-    colunas = names(df)
-    colunas = names(df_filtered)
-
-    for i in 1:length(colunas)
-        println(i," ",colunas[i])
-    end
+    module trained_load
+    using MLJ, Flux, DataFrames, Plots, CSV, Serialization
+    import MLJFlux
 
     # DATA DOCUMENTATION
     # 01 Date/Time
@@ -41,29 +28,51 @@ module decisiontree_load
     # 23 ZONE ONE:Zone Humidity Index [](Hourly)
     # 24 total_load
 
+
+    df = CSV.read("data/eplusout_v29102023.csv",DataFrame)
+
+
+    people_load = df[:,9]
+    light_load = df[:,10]
+    total_load = people_load + light_load
+    df[!,:total_load] = total_load
+    df_filtered = DataFrame(hcat(df[:,2],df[:,4],df[:,6],df[:,7],df[:,8],df[:,10],df[:,24]),:auto)
+    colunas = names(df)
+    colunas = names(df_filtered)
+
+    for i in 1:length(colunas)
+        println(i," ",colunas[i])
+    end
+
     y, X = unpack(df_filtered, ==(:x7); rng=123);
+    X = coerce(X, :RAD=>Continuous)
+    (X, Xtest), (y, ytest) = partition((X, y), 0.7, multi=true);
 
-    train_y = y[1:trunc(Int,ceil(length(y)*0.85))]
-    train_X = X[1:trunc(Int,ceil(length(y)*0.85)),:]
-    test_y = y[trunc(Int,ceil(length(y)*0.85))+1:length(y)]
-    test_X = X[trunc(Int,ceil(length(y)*0.85))+1:length(y),:]
+    builder = MLJFlux.@builder begin
+        init=Flux.glorot_uniform(rng)
+        Chain(
+            Dense(n_in, 64, relu, init=init),
+            Dense(64, 32, relu, init=init),
+            Dense(32, n_out, init=init),
+        )
+    end
 
+    NeuralNetworkRegressor = @load NeuralNetworkRegressor pkg=MLJFlux
+    model = NeuralNetworkRegressor(
+        builder=builder,
+        rng=123,
+        epochs=25
+    )
 
-    models(matching(X,y))
+    pipe = Standardizer()
 
-    doc("DecisionTreeRegressor",pkg="DecisionTree")
+    pipe = MLJ.TransformedTargetModel(model, transformer=Standardizer())
 
-    modelType = @load DecisionTreeRegressor pkg = "DecisionTree" verbosity=0
+    mach = machine(pipe, X, y)
+    fit!(mach, verbosity=2)
 
-    model = modelType()
+    #mach25 = deserialize("model/mach_25epoch_1536dp.dat")
 
-    mach = machine(model, train_X, train_y) |> MLJ.fit!
-
-    yhat = MLJ.predict(mach,test_X) 
-
-    export mach
-    export train_y
-    export train_X
-    export test_y
-    export test_X
+    yhat = MLJ.predict(mach25,Xtest)    
+    export yhat
 end
