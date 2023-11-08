@@ -2,7 +2,7 @@
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "014019e8f563b2ebfb27bd76d07e9b675d483f55"
+project_hash = "012a838d696c1f7d289272481d92ac3b7560b89c"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "5d2e21d7b0d8c22f67483ef95ebdc39c0e6b6003"
@@ -162,6 +162,11 @@ deps = ["Dates", "IntervalSets", "IterTools", "RangeArrays"]
 git-tree-sha1 = "16351be62963a67ac4083f748fdb3cca58bfd52f"
 uuid = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 version = "0.4.7"
+
+[[deps.BSON]]
+git-tree-sha1 = "2208958832d6e1b59e49f53697483a84ca8d664e"
+uuid = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+version = "0.3.7"
 
 [[deps.BandedMatrices]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "PrecompileTools"]
@@ -1673,6 +1678,12 @@ git-tree-sha1 = "dc0de70a794c6d4c1aa4bde8196770c6b6e6b550"
 uuid = "7b7b8358-b45c-48ea-a8ef-7ca328ad328f"
 version = "0.2.0"
 
+[[deps.MLJFlux]]
+deps = ["CategoricalArrays", "ColorTypes", "ComputationalResources", "Flux", "MLJModelInterface", "Metalhead", "ProgressMeter", "Random", "Statistics", "Tables"]
+git-tree-sha1 = "72935b7de07a7f6b72fd49ecc7898dac79248d46"
+uuid = "094fc8d1-fd35-5302-93ea-dabda2abf845"
+version = "0.4.0"
+
 [[deps.MLJIteration]]
 deps = ["IterationControl", "MLJBase", "Random", "Serialization"]
 git-tree-sha1 = "991e10d4c8da49d534e312e8a4fbe56b7ac6f70c"
@@ -1766,6 +1777,18 @@ version = "2.28.2+0"
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
 uuid = "442fdcdd-2543-5da2-b0f3-8c86c306513e"
 version = "0.3.2"
+
+[[deps.Metalhead]]
+deps = ["Artifacts", "BSON", "ChainRulesCore", "Flux", "Functors", "JLD2", "LazyArtifacts", "MLUtils", "NNlib", "PartialFunctions", "Random", "Statistics"]
+git-tree-sha1 = "9ecbb04ec44bb292576064ace129ea0d92dee37a"
+uuid = "dbeba491-748d-5e0e-a39e-b530a07fa0cc"
+version = "0.9.0"
+
+    [deps.Metalhead.extensions]
+    MetalheadCUDAExt = "CUDA"
+
+    [deps.Metalhead.weakdeps]
+    CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 
 [[deps.MicroCollections]]
 deps = ["BangBang", "InitialValues", "Setfield"]
@@ -2053,6 +2076,12 @@ deps = ["Dates", "PrecompileTools", "UUIDs"]
 git-tree-sha1 = "716e24b21538abc91f6205fd1d8363f39b442851"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 version = "2.7.2"
+
+[[deps.PartialFunctions]]
+deps = ["MacroTools"]
+git-tree-sha1 = "47b49a4dbc23b76682205c646252c0f9e1eb75af"
+uuid = "570af359-4316-4cb7-8c74-252c00c2016b"
+version = "1.2.0"
 
 [[deps.Permutations]]
 deps = ["Combinatorics", "LinearAlgebra", "Random"]
