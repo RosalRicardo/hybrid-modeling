@@ -1,6 +1,8 @@
+
 module decisiontree_load
+
     using MLJ, DataFrames, Plots, CSV,MLJDecisionTreeInterface
-    df = CSV.read("data/eplusout_v29102023.csv",DataFrame)
+    df = CSV.read("thermal-simulation/data/eplusout_v29102023.csv",DataFrame)
     people_load = df[:,9]
     light_load = df[:,10]
     total_load = people_load + light_load
@@ -48,6 +50,8 @@ module decisiontree_load
     test_y = y[trunc(Int,ceil(length(y)*0.85))+1:length(y)]
     test_X = X[trunc(Int,ceil(length(y)*0.85))+1:length(y),:]
 
+    vcat(train_X,test_X)
+
 
     models(matching(X,y))
 
@@ -59,11 +63,12 @@ module decisiontree_load
 
     mach = machine(model, train_X, train_y) |> MLJ.fit!
 
-    yhat = MLJ.predict(mach,test_X) 
+    yhat = MLJ.predict(mach,vcat(train_X,test_X)) 
 
     export mach
     export train_y
     export train_X
     export test_y
     export test_X
+    export yhat
 end
