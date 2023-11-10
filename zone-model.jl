@@ -106,7 +106,7 @@ end
 serialize("ZNT_HYBRID.dat",ODEZNT)
 #serialize("ODEZNT_DETERMINISTIC.dat",ODEZNT)
 #ZNT_HYBRID = deserialize("ODEZNT.dat")
-#ZNT_DETERMINISTIC = deserialize("ODEZNT_DETERMINISTIC.dat")
+ZNT_DETERMINISTIC = deserialize("ODEZNT_DETERMINISTIC.dat")
 
 
 plot1 = Plots.plot([ODEZNT[1:336],ZNT[1:336]])
@@ -139,7 +139,12 @@ function calculate_errors(actual, predicted)
     return mse, mae
 end
 
-calculate_errors(ODEZNT,ZNT)
+hybrid_errors = calculate_errors(ODEZNT,ZNT)
+deterministics_errors = calculate_errors(ZNT_DETERMINISTIC,ZNT)
+
+1-hybrid_errors[1]/deterministics_errors[1]
+
+1-hybrid_errors[2]/deterministics_errors[2]
 
 
 
