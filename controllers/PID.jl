@@ -1,10 +1,10 @@
 using Serialization, Plots
 
-setpoint = 25
+setpoint = 22
 process_range = 30
 coil_heat_transfer_coefficient = 650
 coil_area = 0.35
-chilled_water_temperature = 7 # C
+chilled_water_temperature = 5 # C
 heat_transfer_coefficient = 5000 # W
 proportional_coefficient = 0.75
 integral_coefficient = 700
@@ -66,6 +66,7 @@ end
 controlled_temperature = []
 control_signal = []
 error = []
+setpoint_series = ones(9072).*22
 
 delta_T = deltaT(ZNT_10m)
 for i in 1:length(ZNT_10m)
@@ -94,7 +95,7 @@ for i in 1:length(volume)-1
     push!(vacc,vacc[end]+volume[i+1])
 end
 
-plot1 = Plots.plot([controlled_temperature[1:2000],ZNT_10m[1:2000]])
+plot1 = Plots.plot([controlled_temperature[1:9072],ZNT_10m[1:9072],setpoint_series[1:9072]])
 plot2 = Plots.plot(control_signal)
 plot3 = Plots.plot(vacc)
 plot4 = Plots.plot(error)
@@ -103,4 +104,4 @@ plot(plot1,plot2,plot3,plot4,layout=(4,1),size=(800,1200))
 final_volume = vacc[end]
 energy_consumption = vacc[end]*(3.6/plant_COP)
 
-plot2 = Plots.plot(control_signal[1:500])
+plot2 = Plots.plot(control_signal[1:1000])
