@@ -1,20 +1,29 @@
-using JuMP
+using JuMP, Plots
 using Ipopt
 
-function mpc_controller()
+function mpc_controller(N, initial_conditions, u_min, u_max, setpoint)
     # Define MPC parameters
     N = 10  # Prediction horizon
     Δt = 1  # Time step
     setpoint = 22.0
+    u_min = 0
+    u_max = 1
 
     # Define system dynamics (replace with your actual model)
     function system_dynamics(x, u)
-        # Your system dynamics model here
-        return x + u
+        heat_transfer_coefficient = 5000
+        zone_width = 15.24
+        zone_length = 15.24
+        zone_height = 4.25
+        air_density = 1.225 
+        heat_capacity = 1005
+        thermal_capacitance = (zone_width*zone_length*zone_height)*air_density*heat_capacity
+        ΔT = ((heat_transfer_coefficient*u)/thermal_capacitance)*(60*10)
+        return x + ΔT
     end
 
     # Create a JuMP model
-    m = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
+    m = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 1))
 
     # Define decision variables
     @variables m begin
@@ -28,8 +37,13 @@ function mpc_controller()
 
     # Define constraints (replace with your actual constraints)
     @constraints m begin
-        #dynamics[i=1:N, j=2:N+1], i=2:N+1 => x[j] == system_dynamics(x[i-1], u[i-1])
         u_min .<= u .<= u_max
+    end
+
+    
+
+    for i in 1:N
+        @constraint(m,x[i+1] == system_dynamics(x[i], u[i]))
     end
 
     # Define the objective function (replace with your actual cost function)
@@ -49,13 +63,7 @@ function mpc_controller()
     # Apply the first optimal control input to the system
     # (replace this with your actual control action)
     apply_control(u_optimal[1])
-    return u_optimal
-end
-
-# Replace the following with your actual system and control implementation
-function system_dynamics(x, u)
-    # Your system dynamics model here
-    return x + u
+    return [m,u_optimal]
 end
 
 function apply_control(u)
@@ -64,11 +72,16 @@ function apply_control(u)
 end
 
 # Replace the following with your actual initial conditions and constraints
-initial_conditions = [20.0 for _ in 1:11]  # Initial zone temperature
+initial_conditions = [31.21 for _ in 1:11]  # Initial zone temperature
 u_min = 0.0  # Minimum control input
 u_max = 10.0  # Maximum control input
 
-# Run the MPC controller
-mpc_controller()
 
-objective_value(m)
+# Run the MPC controller simulation
+N = 10  # Prediction horizon
+x_history, u_history = mpc_controller(N, initial_conditions, u_min, u_max, setpoint)
+
+# Plotting
+time_steps = 1:24*60
+plot(time_steps, x_history[1, :], label="Zone Temperature", xlabel="Time (minutes)", ylabel="Temperature (°C)", linewidth=2)
+plot!(time_steps[1:end-N+1], u_history[1, :], label="Control Input", linewidth=2, linestyle=:dash)
