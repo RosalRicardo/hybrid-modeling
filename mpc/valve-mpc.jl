@@ -1,72 +1,74 @@
-using JuMP, Serialization, Plots
+using JuMP
 using Ipopt
 
-x = deserialize("data/ODEZNT_1512h.dat")
-setpoint = 22.0
+function mpc_controller()
+    # Define MPC parameters
+    N = 10  # Prediction horizon
+    Δt = 1  # Time step
+    setpoint = 22.0
 
-# Define the MPC parameters
-N = 200  # Prediction horizon
-Δt = 1  # Time step
-u_max = 100
-u_min = 1
+    # Define system dynamics (replace with your actual model)
+    function system_dynamics(x, u)
+        # Your system dynamics model here
+        return x + u
+    end
 
-# Define system dynamics (you will need to replace this with your actual model)
-function cooling_coil_dynamics(T_zone, T_outside, u, dt, C, U)
-    # T_zone: Zone temperature
-    # T_outside: Outside temperature
-    # u: Cooling control input (e.g., valve opening)
-    # dt: Time step
-    # C: Thermal capacitance of the zone
-    # U: Overall heat transfer coefficient
-    
-    # Calculate the heat transfer rate
-    Q = U * (T_outside - T_zone)
-    
-    # Calculate the change in energy of the zone
-    dE = Q * dt
-    
-    # Update the zone temperature using the thermal capacitance
-    T_zone_new = T_zone + dE / C
-    
-    # Apply the cooling control input
-    T_zone_new -= u  # Assuming u represents the cooling effect
-    
-    return T_zone_new
+    # Create a JuMP model
+    m = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
+
+    # Define decision variables
+    @variables m begin
+        u_min <= u[1:N] <= u_max  # Cooling control input
+    end
+
+    # Define state variables
+    @variables m begin
+        x[1:N+1]  # Zone temperature
+    end
+
+    # Define constraints (replace with your actual constraints)
+    @constraints m begin
+        #dynamics[i=1:N, j=2:N+1], i=2:N+1 => x[j] == system_dynamics(x[i-1], u[i-1])
+        u_min .<= u .<= u_max
+    end
+
+    # Define the objective function (replace with your actual cost function)
+    #@objective m Min sum((x[1:N] - setpoint).^2)
+    @objective(m,Min,sum((x[1:N] .- setpoint).^2))
+
+    # Set initial conditions and setpoints
+    #setvalue.(x, initial_conditions)  # Set initial zone temperature
+    setpoint = 22.0  # Setpoint for zone temperature
+
+    # Solve the optimization problem
+    optimize!(m)
+
+    # Retrieve the optimal control inputs
+    u_optimal = value.(u)
+
+    # Apply the first optimal control input to the system
+    # (replace this with your actual control action)
+    apply_control(u_optimal[1])
+    return u_optimal
 end
 
-
-# Define the model
-m = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
-
-# Define decision variables
-@variables m begin
-    u_min <= u[1:N] <= u_max  # Cooling control valve
+# Replace the following with your actual system and control implementation
+function system_dynamics(x, u)
+    # Your system dynamics model here
+    return x + u
 end
 
-# Define state and output variables (you will need to replace these with your actual variables)
-@variables m begin
-    x[1:N+1]  # Zone temperature
+function apply_control(u)
+    # Your control action implementation here
+    println("Applying control input:", u)
 end
 
-# Define constraints (you will need to replace these with your actual constraints)
-@constraints m  begin
-    u_min .<= u[1:N] .<= u_max
-end
+# Replace the following with your actual initial conditions and constraints
+initial_conditions = [20.0 for _ in 1:11]  # Initial zone temperature
+u_min = 0.0  # Minimum control input
+u_max = 10.0  # Maximum control input
 
-# Define the objective function (you will need to replace this with your actual cost function)
-@objective m Min sum((x[1:N] .- setpoint).^2)
+# Run the MPC controller
+mpc_controller()
 
-# Set initial conditions and setpoints
-#Ipopt.setvalue.(x, initial_conditions)  # Set initial zone temperature
-setpoint = 22.0  # Setpoint for zone temperature
-
-# Define the optimization problem and solve
-optimize!(m)
-
-# Retrieve the optimal control inputs
-u_optimal = value.(u)
-Plots.plot(u_optimal)
-
-# Apply the first optimal control input to the system
-# You will need to replace this with your actual control action
-apply_control(u_optimal[1])
+objective_value(m)

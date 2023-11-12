@@ -25,6 +25,9 @@ yhat = deserialize("model/yhat_nn_25epochs.dat")[25:end]
 # Tw2 - temperature (North and South walls) - C
 # Tr  - temperature (Roof) - C
 # q   - heat gain for occupants and lights - W
+# wall X - 15.24 m
+# wall Y - 4.572 m
+# area - 69.68 m2
 
 ## READ RAW DATA
 
@@ -41,7 +44,7 @@ ZNT = df[25:end,12]
 @variables t Tz(t)=ZNT[1] Tw1(t)=OAT[1] Tw2(t)=OAT[1] Tr(t)=OAT[1] Wz(t)=0.8
 
 #parameters Cz=47.1e3 Fsa=0.192*3600  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=9 Aw2=12 Ar=9 q=3000 To=21 Cw1=70 Cw2=60 Cr=80 Vz=36 Ws=0.02744 P=0.08
-@parameters Cz=4.5e3 Fsa=0  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=2 Uw2=2 Ur=1 Aw1=40 Aw2=40 Ar=10 q=3000 To=OAT[1] Cw1=70 Cw2=60 Cr=70 Vz=36 Ws=0.02744 P=0.08
+@parameters Cz=4.5e3 Fsa=0  ρa=1.25 Cpa=1.005 Tsa=16 Uw1=0.2 Uw2=0.2 Ur=1 Aw1=69.68 Aw2=69.68 Ar=232.25 q=3000 To=OAT[1] Cw1=70 Cw2=60 Cr=70 Vz=36 Ws=0.02744 P=0.08
 
 D = Differential(t)
 
@@ -78,6 +81,15 @@ function affect!(integrator)
     println(integrator.p)
 end
 
+function affect2!(integrator)
+
+    integrator.p[3] = 1000
+    integrator.p[13] = OAT[trunc(Int,integrator.t)]
+
+    #push!(energy2,integrator.p[3])
+    println(integrator.p)
+end
+
 cb = DiscreteCallback(condition,affect!)
 
 prob = ODEProblem(simpsys,[],tspan,callback=cb,tstops=ev_times)
@@ -91,13 +103,17 @@ for i in 1:length(ZNT)
     push!(ODERoofT,sol(i)[2])
 end
 
-
+serialize("ZNT_HYBRID.dat",ODEZNT)
+#serialize("ODEZNT_DETERMINISTIC.dat",ODEZNT)
+#ZNT_HYBRID = deserialize("ODEZNT.dat")
+ZNT_DETERMINISTIC = deserialize("ODEZNT_DETERMINISTIC.dat")
 
 
 plot1 = Plots.plot([ODEZNT[1:336],ZNT[1:336]])
-plot2 = Plots.plot([total_load[1:336],yhat[1:336]])
-plot3 = Plots.plot([OAT[1:336],people_load[1:336],light_load[1:336]])
-plot_grid = Plots.plot(plot1,plot2,layout=(3,1))
+plot2 = Plots.plot([ZNT_DETERMINISTIC[1:336],ZNT[1:336]])
+plot3 = Plots.plot([total_load[1:336],yhat[1:336]])
+plot4 = Plots.plot([OAT[1:336]])
+plot_grid = Plots.plot(plot1,plot2,plot3,plot4,layout=(4,1),size=(1024,1024))
 Plots.plot([ODERoofT[1:336],OAT[1:336]])
 
 
@@ -105,3 +121,30 @@ Plots.plot(sol)
 
 
 Plots.plot([people_load[25:121],light_load[25:121]])
+
+#error calculation
+function calculate_errors(actual, predicted)
+    if length(actual) != length(predicted)
+        throw(ArgumentError("Input vectors must have the same length."))
+    end
+    
+    n = length(actual)
+    
+    # Calculate MSE
+    mse = sum((actual .- predicted).^2) / n
+    
+    # Calculate MAE
+    mae = sum(abs.(actual .- predicted)) / n
+    
+    return mse, mae
+end
+
+hybrid_errors = calculate_errors(ODEZNT,ZNT)
+deterministics_errors = calculate_errors(ZNT_DETERMINISTIC,ZNT)
+
+1-hybrid_errors[1]/deterministics_errors[1]
+
+1-hybrid_errors[2]/deterministics_errors[2]
+
+
+
