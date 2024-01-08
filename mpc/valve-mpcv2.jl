@@ -4,6 +4,20 @@ using Plots
 
 HYBRID_ZNT = deserialize("ZNT_HYBRID.dat")
 
+function deltaT(znt)
+    deltaT = []
+    for i in 1:length(znt)
+        if i == 1 
+            push!(deltaT,0)
+        else
+            push!(deltaT,znt[i]-znt[i-1])
+        end
+    end
+    return deltaT
+end
+
+delta_T = deltaT(HYBRID_ZNT)
+
 # Define the system dynamics function (replace with your actual model)
 function system_dynamics(x, u, t)
     heat_transfer_coefficient = 5000
@@ -27,7 +41,7 @@ function apply_control(u,t)
     heat_capacity = 1005
     thermal_capacitance = (zone_width*zone_length*zone_height)*air_density*heat_capacity
     ΔT = ((heat_transfer_coefficient*u)/thermal_capacitance)*(60*10)
-    return HYBRID_ZNT[t] + ΔT
+    return (delta_T[t] + ΔT)
     # Add your actuation logic here, such as adjusting a valve, fan, or heater
 end
 
@@ -67,7 +81,7 @@ function mpc_controller(N, initial_conditions, u_min, u_max, setpoint)
     u_history = zeros(N, 24*60)
 
     # Simulate for 24 hours
-    for t in 1:1000
+    for t in 1:100
         # Solve the optimization problem at each time step
         optimize!(m)
 
@@ -76,28 +90,35 @@ function mpc_controller(N, initial_conditions, u_min, u_max, setpoint)
 
         # Apply the first optimal control input to the system
         current_temperature = apply_control(u_optimal[1],t)
+        #fix.(x,[current_temperature for _ in 1:1])
+        #fix.(x,[value.(x)[1]+current_temperature])
         
         # Store results
         x_history[:, t] .= value.(x)
         u_history[:, t] .= u_optimal
 
-        fix.(x,[current_temperature for _ in 1:11])
     end
 
-    return x_history, u_history
+    return x_history, u_history, m
 end
 
 # Replace the following with your actual initial conditions and constraints
-initial_conditions = [31.21 for _ in 1:11]  # Initial zone temperature
+#initial_conditions = [31.21 for _ in 1:11]  # Initial zone temperature
+initial_conditions = [31.21]  # Initial zone temperature
 u_min = 0.0  # Minimum control input
 u_max = 1.0  # Maximum control input
 setpoint = 22.0  # Setpoint for zone temperature
 
 # Run the MPC controller simulation
-N = 10  # Prediction horizon
-x_history, u_history = mpc_controller(N, initial_conditions, u_min, u_max, setpoint)
+N = 1  # Prediction horizon
+x_history, u_history, model = mpc_controller(N, initial_conditions, u_min, u_max, setpoint)
 
 # Plotting
 time_steps = 1:24*60
 plot(time_steps, [x_history[1, :],u_history[1,:]], label="Zone Temperature", xlabel="Time (minutes)", ylabel="Temperature (°C)", linewidth=2)
 plot!(time_steps[1:end-N+1], u_history[1, :], label="Control Input", linewidth=2, linestyle=:dash)
+
+optimize!(model)
+
+value.(u)
+

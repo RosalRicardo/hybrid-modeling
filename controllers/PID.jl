@@ -1,6 +1,6 @@
 using Serialization, Plots
 
-setpoint = 22
+setpoint = 20
 process_range = 30
 coil_heat_transfer_coefficient = 650
 coil_area = 0.35
@@ -95,13 +95,14 @@ for i in 1:length(volume)-1
     push!(vacc,vacc[end]+volume[i+1])
 end
 
-plot1 = Plots.plot([controlled_temperature[1:9072],ZNT_10m[1:9072],setpoint_series[1:9072]])
-plot2 = Plots.plot(control_signal)
-plot3 = Plots.plot(vacc)
-plot4 = Plots.plot(error)
-plot(plot1,plot2,plot3,plot4,layout=(4,1),size=(800,1200))
+plot1 = Plots.plot([controlled_temperature[1:432],ZNT_10m[1:432],setpoint_series[1:432]])
+plot2 = Plots.plot(control_signal[1:432])
+plot3 = Plots.plot(vacc[1:432])
+plot4 = Plots.plot(error[1:432])
+Plots.plot(plot1,plot2,plot3,plot4,layout=(4,1),size=(800,1200))
 
 final_volume = vacc[end]
 energy_consumption = vacc[end]*(3.6/plant_COP)
 
-plot2 = Plots.plot(control_signal[1:1000])
+plot2 = Plots.plot(control_signal[1:20])
+plot2 = Plots.plot(controlled_temperature[1:20])
