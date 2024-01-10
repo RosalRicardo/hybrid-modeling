@@ -4,10 +4,10 @@ setpoint = 22
 process_range = 30
 coil_heat_transfer_coefficient = 650
 coil_area = 0.35
-chilled_water_temperature = 5 # C
+chilled_water_temperature = 7 # C
 heat_transfer_coefficient = 5000 # W
-proportional_coefficient = 0.75
-integral_coefficient = 700
+proportional_coefficient = 0.8
+integral_coefficient = 20
 flow = 3.202 #m3/h
 plant_COP = 6
 
@@ -26,6 +26,7 @@ function tranform_time(ts)
 end
 
 temperatura = tranform_time(HYBRID_ZNT)
+temperatura = HYBRID_ZNT
 Plots.plot(temperatura[1:1000])
 
 function thermal_capacitance(zone_width,zone_length,zone_height,air_density=1.225,heat_capacity=1005)
@@ -54,11 +55,11 @@ control_signal = ((error*proportional_coefficient)+sum(error)/integral_coefficie
 
 ΔT = ((heat_transfer_coefficient*control_signal)/thermalCapacitance)*(60*10)
 
-function controller(actual_temperature, setpoint)
+function controller(actual_temperature, setpoint,error_acc)
     error = actual_temperature - setpoint
     #error < 0 ? error = 0 : error = error
     thermalCapacitance = thermal_capacitance(15.24,15.24,4.25)
-    control_signal = ((error*proportional_coefficient)+sum(error)/integral_coefficient)/process_range
+    control_signal = ((error*proportional_coefficient)+sum(error_acc)/integral_coefficient)/process_range
     ΔT = ((heat_transfer_coefficient*control_signal)/thermalCapacitance)*(60*10)
     return [actual_temperature - ΔT,control_signal,error]
 end
@@ -75,16 +76,16 @@ for i in 1:length(ZNT_10m)
         push!(control_signal,controller(ZNT_10m[i],22)[2])
         push!(error,controller(ZNT_10m[i],22)[3])
     else
-        push!(controlled_temperature,controller((controlled_temperature[end])+delta_T[i],22)[1])
-        _control_signal = control_signal[end]+controller((controlled_temperature[end])+delta_T[i],22)[2]
+        push!(controlled_temperature,controller((controlled_temperature[end])+delta_T[i],22,error)[1])
+        _control_signal = control_signal[end]+controller((controlled_temperature[end])+delta_T[i],22,error)[2]
         if _control_signal >= 1
             push!(control_signal,1)
         elseif _control_signal <= 0
             push!(control_signal,1)
         else
-            push!(control_signal,control_signal[end]+controller((controlled_temperature[end])+delta_T[i],22)[2])
+            push!(control_signal,control_signal[end]+controller((controlled_temperature[end])+delta_T[i],22,error)[2])
         end
-        push!(error,controller((controlled_temperature[end])+delta_T[i],22)[3])
+        push!(error,controller((controlled_temperature[end])+delta_T[i],22,error)[3])
     end
 end
 
@@ -102,7 +103,14 @@ plot4 = Plots.plot(error[1:432])
 Plots.plot(plot1,plot2,plot3,plot4,layout=(4,1),size=(800,1200))
 
 final_volume = vacc[50]
-energy_consumption = vacc[20]*(3.6/plant_COP)
+energy_consumption = vacc[50]*(3.6/plant_COP)
 
 plot2 = Plots.plot(control_signal[1:50])
-plot2 = Plots.plot(controlled_temperature[1:20])
+plot2 = Plots.plot(controlled_temperature[1:50])
+
+plot(
+    plot(1:50, [HYBRID_ZNT[1:50], controlled_temperature[1:50],setpoint_series[1:50]], label=["Uncontrolled" "Controlled" "Setpoint"], xlabel="Time", ylabel="Temperature", color=[:blue :green :black], linewidth=1,title="comparison between controlled and uncontrolled temperature"),
+    plot(1:50, control_signal[1:50], label="Control Action", xlabel="Time", ylabel="Valve Position", color=:red, linewidth=1,title="control output - cooling valve position"),
+    plot(1:50, vacc[1:50], label="Volume", xlabel="Time", ylabel="Water Volume", color=:blue, linewidth=1,title="max water consumption: 23.44 m^3"),
+    layout=(3, 1), legend=true,size=(800,600)
+)
