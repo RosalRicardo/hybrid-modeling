@@ -93,9 +93,9 @@ end
 setpoint_series = ones(50).*22
 
 plot(
-    plot(1:50, [HYBRID_ZNT[1:50], temp,setpoint_series], label=["Uncontrolled" "Controlled"], xlabel="Time", ylabel="Temperature", color=[:blue :green :black], linewidth=1,title="comparison between controlled and uncontrolled temperature"),
-    plot(1:50, valve, label="Control Action", xlabel="Time", ylabel="Valve Position", color=:red, linewidth=1,title="control output - cooling valve position"),
-    plot(1:50, vacc, label="Volume", xlabel="Time", ylabel="Water Volume", color=:blue, linewidth=1,title="max water consumption: 2.96 m^3"),
+    plot(1:50, [HYBRID_ZNT[1:50], temp,setpoint_series], label=["Uncontrolled" "Controlled"], xlabel="Time", ylabel="Temperature (°C)", color=[:blue :green :black], linewidth=1,title="comparison between controlled and uncontrolled temperature (a)"),
+    plot(1:50, valve, label="Control Action", xlabel="Time", ylabel="Valve Position (%)", color=:red, linewidth=1,title="control output - cooling valve position (b)"),
+    plot(1:50, vacc, label="Volume", xlabel="Time", ylabel="Water Volume (m³)", color=:blue, linewidth=1,title="max water consumption: 2.96 m³ (c)",ylim=(0,25)),
     layout=(3, 1), legend=true,size=(800,600)
 )
 

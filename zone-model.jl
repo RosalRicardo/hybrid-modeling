@@ -110,13 +110,13 @@ ZNT_DETERMINISTIC = deserialize("ODEZNT_DETERMINISTIC.dat")
 
 
 # Plotting with color, legends, and titles
-plot1 = Plots.plot([ODEZNT[1:336], ZNT[1:336]], color=[:blue :green], label=["ODEZNT" "ZNT"], title="HYBRID MODEL vs DATA", xlabel="Time", ylabel="Temperature (Celcius)")
-plot2 = Plots.plot([ZNT_DETERMINISTIC[1:336], ZNT[1:336]], color=[:blue :green], label=["ZNT_DETERMINISTIC" "ZNT"], title="DETERMINISTIC MODEL vs DATA", xlabel="Time", ylabel="Temperature (Celcius)")
-plot3 = Plots.plot([total_load[1:336], yhat[1:336]], color=[:blue :green], label=["total_load" "yhat"], title="LOAD PREDICTION vs DATA", xlabel="Time", ylabel="kW (Cooling Load)")
-plot4 = Plots.plot([OAT[1:336]], color=:blue, label="OAT", title="Outside air temperature", xlabel="Time", ylabel="Temperature (Celcius)")
+plot1 = Plots.plot([ZNT_DETERMINISTIC[1:336],ODEZNT[1:336], ZNT[1:336]], color=[:red :blue :green], label=["DETERMINISTIC ZNT" "HYBRID ZNT" "TRUTH ZNT"], title="Hybrid Model vs Deterministic Model vs Data (a)", xlabel="Time", ylabel="Temperature (Celcius)")
+plot2 = Plots.plot([ZNT_DETERMINISTIC[1:336], ZNT[1:336]], color=[:blue :green], label=["ZNT_DETERMINISTIC" "ZNT"], title="Deterministic Model vs Data (b)", xlabel="Time", ylabel="Temperature (Celcius)")
+plot3 = Plots.plot([total_load[1:336], yhat[1:336]], color=[:blue :green], label=["total_load" "yhat"], title="Load vs Data (b)", xlabel="Time", ylabel="kW (Cooling Load)")
+plot4 = Plots.plot([OAT[1:336]], color=:blue, label="OAT", title="Outside air temperature (c)", xlabel="Time", ylabel="Temperature (Celcius)")
 
 # Combine plots into a grid
-plot_grid = Plots.plot(plot1, plot2, plot3, plot4, layout=(4,1), size=(1024,1024))
+plot_grid = Plots.plot(plot1, plot3, plot4, layout=(4,1), size=(1024,1024))
 
 
 Plots.plot([ODERoofT[1:336],OAT[1:336]])

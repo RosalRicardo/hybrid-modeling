@@ -6,11 +6,21 @@ coil_heat_transfer_coefficient = 650
 coil_area = 0.35
 chilled_water_temperature = 7 # C
 heat_transfer_coefficient = 5000 # W
-proportional_coefficient = 0.8
-integral_coefficient = 20
+proportional_coefficient = 14.58
+integral_coefficient = 14.58
 flow = 3.202 #m3/h
 plant_COP = 6
 
+# parametros PID de acordo com Zigler-Nichols
+# Kp = 0.6 * Kc
+# Ki = 2 * Kp / Pc
+
+# Oscillation Points
+# Kc = 24.3 
+# Pc = 2
+
+# Kp = 14.58
+# Kp = 14.58
 
 HYBRID_ZNT = deserialize("ZNT_HYBRID.dat")
 
@@ -69,12 +79,23 @@ control_signal = []
 error = []
 setpoint_series = ones(9072).*22
 
-delta_T = deltaT(ZNT_10m)
-for i in 1:length(ZNT_10m)
+controller(HYBRID_ZNT[1],22)
+
+
+
+delta_T = deltaT(HYBRID_ZNT)
+for i in 1:length(HYBRID_ZNT)
     if i == 1
-        push!(controlled_temperature,controller(ZNT_10m[i],22)[1])
-        push!(control_signal,controller(ZNT_10m[i],22)[2])
-        push!(error,controller(ZNT_10m[i],22)[3])
+        push!(controlled_temperature,controller(HYBRID_ZNT[i],22)[1])
+        _control_signal = controller(HYBRID_ZNT[i],22)[2]
+        if _control_signal >= 1
+            push!(control_signal,1)
+        elseif _control_signal <= 0
+            push!(control_signal,1)
+        else
+            push!(control_signal,controller(HYBRID_ZNT[i],22)[2])
+        end
+        push!(error,controller(HYBRID_ZNT[i],22)[3])
     else
         push!(controlled_temperature,controller((controlled_temperature[end])+delta_T[i],22,error)[1])
         _control_signal = control_signal[end]+controller((controlled_temperature[end])+delta_T[i],22,error)[2]
@@ -108,9 +129,9 @@ energy_consumption = vacc[50]*(3.6/plant_COP)
 plot2 = Plots.plot(control_signal[1:50])
 plot2 = Plots.plot(controlled_temperature[1:50])
 
-plot(
-    plot(1:50, [HYBRID_ZNT[1:50], controlled_temperature[1:50],setpoint_series[1:50]], label=["Uncontrolled" "Controlled" "Setpoint"], xlabel="Time", ylabel="Temperature", color=[:blue :green :black], linewidth=1,title="comparison between controlled and uncontrolled temperature"),
-    plot(1:50, control_signal[1:50], label="Control Action", xlabel="Time", ylabel="Valve Position", color=:red, linewidth=1,title="control output - cooling valve position"),
-    plot(1:50, vacc[1:50], label="Volume", xlabel="Time", ylabel="Water Volume", color=:blue, linewidth=1,title="max water consumption: 23.44 m^3"),
+Plots.plot(
+    plot(1:50, [HYBRID_ZNT[1:50], controlled_temperature[1:50],setpoint_series[1:50]], label=["Uncontrolled" "Controlled" "Setpoint"], xlabel="Time", ylabel="Temperature", color=[:blue :green :black], linewidth=1,title="comparison between controlled and uncontrolled temperature (a)"),
+    plot(1:50, control_signal[1:50], label="Control Action", xlabel="Time", ylabel="Valve Position", color=:red, linewidth=1,title="control output - cooling valve position (b)"),
+    plot(1:50, vacc[1:50], label="Volume", xlabel="Time", ylabel="Water Volume", color=:blue, linewidth=1,title="max water consumption: 21.02 m³ (c)"),
     layout=(3, 1), legend=true,size=(800,600)
 )
